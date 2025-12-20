@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.apkg
+venv/
+.env
+.DS_Store
