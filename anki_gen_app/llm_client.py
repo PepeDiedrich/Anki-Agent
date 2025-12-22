@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import json
 import os
 
@@ -7,10 +7,10 @@ def generate_anki_cards(api_key, text_content, user_prompt=""):
     Sends the text content and user prompt to Gemini to generate Anki cards.
     Returns a list of dictionaries [{'front': '...', 'back': '...'}].
     """
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     # We use a model capable of JSON mode or just good instruction following.
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model_id = 'gemini-3-flash-preview'
 
     base_prompt = """
     You are an expert at creating Anki flashcards.
@@ -43,7 +43,7 @@ def generate_anki_cards(api_key, text_content, user_prompt=""):
 
     try:
         # Increase token limit for response if needed, though default is usually fine for a list of cards
-        response = model.generate_content(formatted_prompt)
+        response = client.models.generate_content(model=model_id, contents=formatted_prompt)
         response_text = response.text.strip()
 
         # Clean up if the model wraps in markdown

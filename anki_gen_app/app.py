@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from file_processor import extract_text_from_pdf, extract_text_from_txt, chunk_text
+from file_processor import extract_text_from_pdf, extract_text_from_txt, chunk_text, split_by_chapters
 from llm_client import generate_anki_cards
 from anki_generator import create_anki_deck
 
@@ -55,21 +55,41 @@ if uploaded_file and api_key:
 
                 st.success(f"Successfully extracted {len(text_content)} characters.")
 
-                # 2. Chunk Text
-                chunks = chunk_text(text_content, chunk_size=chunk_size)
-                st.info(f"Split document into {len(chunks)} parts for processing.")
+                # 2. Split by Chapters and then Chunk if necessary
+                chapters = split_by_chapters(text_content)
+                
+                all_processing_units = []
+                for chap in chapters:
+                    chap_title = chap['title']
+                    chap_content = chap['content']
+                    
+                    if len(chap_content) > chunk_size:
+                        # If chapter is too big, chunk it but keep the title context
+                        sub_chunks = chunk_text(chap_content, chunk_size=chunk_size)
+                        for j, sc in enumerate(sub_chunks):
+                            all_processing_units.append({
+                                'display_name': f"{chap_title} (Part {j+1})",
+                                'content': sc
+                            })
+                    else:
+                        all_processing_units.append({
+                            'display_name': chap_title,
+                            'content': chap_content
+                        })
 
-                # 3. Process Chunks
+                st.info(f"Split document into {len(all_processing_units)} sections based on chapters.")
+
+                # 3. Process Units
                 all_cards = []
                 progress_bar = st.progress(0)
 
-                for i, chunk in enumerate(chunks):
+                for i, unit in enumerate(all_processing_units):
                     # Update progress
-                    progress = (i + 1) / len(chunks)
-                    progress_bar.progress(progress, text=f"Processing part {i+1} of {len(chunks)}...")
+                    progress = (i + 1) / len(all_processing_units)
+                    progress_bar.progress(progress, text=f"Processing: {unit['display_name']}...")
 
                     # Call LLM
-                    chunk_cards = generate_anki_cards(api_key, chunk, user_prompt)
+                    chunk_cards = generate_anki_cards(api_key, unit['content'], user_prompt)
                     if chunk_cards:
                         all_cards.extend(chunk_cards)
 
