@@ -28,8 +28,8 @@ with st.sidebar:
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.subheader("1. Upload File")
-    uploaded_file = st.file_uploader("Choose a file", type=['pdf', 'txt'])
+    st.subheader("1. Upload Files")
+    uploaded_files = st.file_uploader("Choose files", type=['pdf', 'txt'], accept_multiple_files=True)
 
     st.subheader("2. Custom Instructions")
     user_prompt = st.text_area(
@@ -38,22 +38,25 @@ with col1:
         height=150
     )
 
-if uploaded_file and api_key:
+if uploaded_files and api_key:
     if st.button("Generate Cards", type="primary"):
-        with st.spinner("Reading file..."):
+        with st.spinner("Reading files..."):
             try:
                 # 1. Extract Text
-                text_content = ""
-                if uploaded_file.type == "application/pdf":
-                    text_content = extract_text_from_pdf(uploaded_file)
-                else:
-                    text_content = extract_text_from_txt(uploaded_file)
+                all_text_content = []
+                for uploaded_file in uploaded_files:
+                    if uploaded_file.type == "application/pdf":
+                        all_text_content.append(extract_text_from_pdf(uploaded_file))
+                    else:
+                        all_text_content.append(extract_text_from_txt(uploaded_file))
+                
+                text_content = "\n\n".join(filter(None, all_text_content))
 
                 if not text_content:
-                    st.error("Could not extract text from the file.")
+                    st.error("Could not extract text from the files.")
                     st.stop()
 
-                st.success(f"Successfully extracted {len(text_content)} characters.")
+                st.success(f"Successfully extracted {len(text_content)} characters from {len(uploaded_files)} files.")
 
                 # 2. Split by Chapters and then Chunk if necessary
                 chapters = split_by_chapters(text_content)
