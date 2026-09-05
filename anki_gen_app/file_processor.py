@@ -29,7 +29,7 @@ def split_by_chapters(text: str) -> list[dict]:
     # Patterns for chapters: "Chapter 1", "Kapitel 1", "1. Introduction", "1.1 Section"
     patterns = [
         r'^(?:Chapter|Kapitel)\s+\d+.*$',
-        r'^\d+(?:\.\d+)*\s+[A-ZÄÖÜ].*$'
+        r'^\d+(?:\.\d+)*\.?\s+[A-ZÄÖÜ].*$'
     ]
     
     combined_pattern = r'(?m)' + '|'.join(f'({p})' for p in patterns)
